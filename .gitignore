@@ -1,0 +1,13 @@
+# Ignore compiled code
+
+out/
+build/
+
+# Ignore folders created by gradle and IntelliJ
+
+.gradle/
+.idea/
+
+# Ignore empty target files used by make
+sync
+sync_jar

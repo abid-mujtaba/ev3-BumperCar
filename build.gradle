@@ -1,0 +1,45 @@
+apply plugin: 'java'
+
+def main_class = "BumperCar"     // We define the main-class of the project.
+
+// We set the Version of the Java SDK to the one on the system: 1.6
+sourceCompatibility = 1.6
+
+sourceSets {
+
+    main {
+
+        // We specify the source directories for the project. The first one is created by us while the latter two are part of the LeJOS source and provide
+        // essential classes for controlling the EV3.
+        java {
+            srcDirs = ['src', '/home/abid/applications/lejos/ev3/DBusJava/src', '/home/abid/applications/lejos/ev3/ev3classes/src']
+        }
+
+        // We specify the jar library required to compile the project. This provides the com.sun.jna package
+        dependencies {
+            compile files('/home/abid/applications/lejos/ev3/ev3classes/lib/jna-3.2.7.jar')
+        }
+
+        // We specify manifest attributes (key-value pairs that must appear in the META-INF/MANIFEST>MF file inside the output Jar for the EV3 to run it correctly.
+        // Additionally we supply the name of the Main-Class which is the starting point of the program execution.
+        jar {
+            manifest {
+                attributes("Main-Class": main_class, "Class-Path": "/home/root/lejos/lib/ev3classes.jar /home/root/lejos/libjna/usr/share/java/jna.jar")
+            }
+        }
+    }
+}
+
+/*
+ * NOTES:
+ *
+ * We specify the Jar library as a compile dependency.
+ * We specify the Jar Manifest entries as jar/manifest/attributes.
+ *
+ *
+ * This gradle build file will compile when one issues the "gradle build" command.
+ *
+ * The HelloWorld.class file (which can be run on the EV3 using the "jrun" command) is placed in the build/classes/main/ folder.
+ *
+ * The HelloWorld.jar file (which can be run off of the EV3 using the LeJOS menu) is placed in the build/libs/ folder.
+ */
