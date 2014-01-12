@@ -29,17 +29,3 @@ sourceSets {
         }
     }
 }
-
-/*
- * NOTES:
- *
- * We specify the Jar library as a compile dependency.
- * We specify the Jar Manifest entries as jar/manifest/attributes.
- *
- *
- * This gradle build file will compile when one issues the "gradle build" command.
- *
- * The HelloWorld.class file (which can be run on the EV3 using the "jrun" command) is placed in the build/classes/main/ folder.
- *
- * The HelloWorld.jar file (which can be run off of the EV3 using the LeJOS menu) is placed in the build/libs/ folder.
- */
