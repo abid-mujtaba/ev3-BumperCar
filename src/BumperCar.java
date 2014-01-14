@@ -146,14 +146,16 @@ public class BumperCar
         }
 
         @Override
-        public boolean takeControl() { return foundObstacle(); }            // If an obstacle is found this Behaviour takes control.
+        public boolean takeControl() { log("DetectObstacle.takeControl()"); return foundObstacle(); }            // If an obstacle is found this Behaviour takes control.
 
         @Override
-        public void suppress() {}           // Since this is the highest priority behaviour suppress will never be called upon it
+        public void suppress() { log("DetectObstacle.suppress()"); }           // Since this is the highest priority behaviour suppress will never be called upon it
 
         @Override
         public void action()        // Upon obstacle detection we simply stop the motor
         {
+            log("DetectObstacle.action()");
+
             BumperCar.stop();
             BumperCar.sensor.stop_sensor();
 
@@ -171,12 +173,16 @@ public class BumperCar
         @Override
         public boolean takeControl()
         {
+            log("DriveForward.takeControl()");
+
             return true;            // This Behavior always wants control.
         }
 
         @Override
         public void suppress()
         {
+            log("DriveForward.suppress()");
+
             _suppressed = true;          // Standard practice for suppressed method
         }
 
@@ -184,14 +190,14 @@ public class BumperCar
         @Override
         public void action()
         {
+            log("DriveForward.action()");
+
             _suppressed = false;            // The behavior's action was triggered so it is not suppressed any longer
 
             forward();                      // Make the Car move forward
 
             while (! _suppressed)           // Stay in the action() block until the Behavior is suppressed
             {
-                Delay.msDelay(100);     // Add a delay here so that this loop doesn't go crazy.
-
                 Thread.yield();         // Don't exit till suppressed
             }
         }
