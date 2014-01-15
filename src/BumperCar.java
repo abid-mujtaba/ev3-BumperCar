@@ -5,9 +5,8 @@ import lejos.hardware.sensor.EV3IRSensor;
 import lejos.hardware.sensor.SensorModes;
 import lejos.robotics.RegulatedMotor;
 import lejos.robotics.SampleProvider;
-import lejos.robotics.subsumption.Arbitrator;
-import lejos.robotics.subsumption.Behavior;
 import lejos.utility.Delay;
+import subsumption.Behavior;
 
 /**
  * Main class of the BumperClass project.
@@ -48,7 +47,7 @@ public class BumperCar
         sensor.setDaemon(true);
         sensor.start();
 
-        DriveForward driver = new DriveForward();
+        Behavior driver = new DriveForward();
         DetectObstacle obstacle = new DetectObstacle(driver);
 
         Thread t_driver = new Thread(driver, "Thread - Driver");
@@ -146,7 +145,7 @@ public class BumperCar
 
                 distance = (int) sample[0];
 
-                log("Distance: " + distance);
+//                log("Distance: " + distance);
 
                 Delay.msDelay(100);             // We delay for 100ms before getting data from the IR sensor.
             }
@@ -184,53 +183,16 @@ public class BumperCar
 //    }
 
 
-//    static class DriverForward implements Behavior
-//    {
-//        private boolean _suppressed = false;
-//
-//        @Override
-//        public boolean takeControl()
-//        {
-//            log("DriveForward.takeControl()");
-//
-//            return true;            // This Behavior always wants control.
-//        }
-//
-//        @Override
-//        public void suppress()
-//        {
-//            log("DriveForward.suppress()");
-//
-//            _suppressed = true;          // Standard practice for suppressed method
-//        }
-//
-//
-//        @Override
-//        public void action()
-//        {
-//            log("DriveForward.action()");
-//
-//            _suppressed = false;            // The behavior's action was triggered so it is not suppressed any longer
-//
-//            forward();                      // Make the Car move forward
-//
-//            while (! _suppressed)           // Stay in the action() block until the Behavior is suppressed
-//            {
-//                Thread.yield();         // Don't exit till suppressed
-//            }
-//        }
-//    }
-
     static class DetectObstacle implements Runnable
     {
-        private DriveForward mDriver;
+        private Behavior mDriver;
 
         private boolean _suppressed = false;
 
         public static final class Lock {}
         public static final Lock lock = new Lock();
 
-        public DetectObstacle(DriveForward driver)
+        public DetectObstacle(Behavior driver)
         {
             mDriver = driver;
         }
@@ -264,19 +226,13 @@ public class BumperCar
     }
 
 
-    static class DriveForward implements Runnable
+    static class DriveForward extends Behavior
     {
         private boolean _suppressed = false;
 
-        public static final class Lock {}
-        private static final Lock lock = new Lock();
-
-        public Lock lock() { return lock; }
-
         public void suppress() { _suppressed = true; }
 
-
-
+        public boolean takeControl() { return true; }       // Returning true here means this Behavior ALWAYS wants control that is it is the default behavior
 
         @Override
         public void run()
@@ -285,11 +241,11 @@ public class BumperCar
 
             while (! _suppressed)
             {
-                synchronized(lock)
+                synchronized(_lock)
                 {
                     try
                     {
-                        lock.wait();
+                        _lock.wait();
                     }
                     catch (InterruptedException e) {}
                 }
