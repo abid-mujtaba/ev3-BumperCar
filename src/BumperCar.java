@@ -48,17 +48,27 @@ public class BumperCar
         sensor.setDaemon(true);
         sensor.start();
 
-        // Initialize Subsumption
-        log("Initializing Subsumption");
+        DriveForward driver = new DriveForward();
 
-        Behavior b1 = new DriverForward();
-        Behavior b2 = new DetectObstacle();
+        Thread t = new Thread(driver, "Thread - Driver");
 
-        Behavior[] behaviors = {b1, b2};
+        t.start();
 
-        Arbitrator arbitrator = new Arbitrator(behaviors);          // An Arbitrator initiated using the behaviors list
+        try { t.join(); } catch (InterruptedException e) {}
 
-        arbitrator.start();             // Begin arbitration.
+
+
+//        // Initialize Subsumption
+//        log("Initializing Subsumption");
+//
+//        Behavior b1 = new DriverForward();
+//        Behavior b2 = new DetectObstacle();
+//
+//        Behavior[] behaviors = {b1, b2};
+//
+//        Arbitrator arbitrator = new Arbitrator(behaviors);          // An Arbitrator initiated using the behaviors list
+//
+//        arbitrator.start();             // Begin arbitration.
 
         log("Initialization Complete");
     }
@@ -200,6 +210,32 @@ public class BumperCar
             {
                 Thread.yield();         // Don't exit till suppressed
             }
+        }
+    }
+
+
+    static class DriveForward implements Runnable
+    {
+        private boolean _suppressed = false;
+
+        public static class Lock {}
+        public static final Lock lock = new Lock();
+
+
+        @Override
+        public void run()
+        {
+            forward();
+
+            while (! _suppressed)
+            {
+                synchronized(lock)
+                {
+                    try {lock.wait(6000); _suppressed = true;} catch (InterruptedException e) {}
+                }
+            }
+
+            stop();
         }
     }
 
