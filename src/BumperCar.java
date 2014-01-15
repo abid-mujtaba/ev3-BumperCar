@@ -49,12 +49,20 @@ public class BumperCar
         sensor.start();
 
         DriveForward driver = new DriveForward();
+        DetectObstacle obstacle = new DetectObstacle(driver);
 
-        Thread t = new Thread(driver, "Thread - Driver");
+        Thread t_driver = new Thread(driver, "Thread - Driver");
+        Thread t_obstacle = new Thread(obstacle, "Thread - Obstacle");
 
-        t.start();
+        t_driver.start();
+        t_obstacle.start();
 
-        try { t.join(); } catch (InterruptedException e) {}
+        try
+        {
+            t_driver.join();
+            t_obstacle.join();
+        }
+        catch (InterruptedException e) {}
 
 
 
@@ -146,69 +154,111 @@ public class BumperCar
     }
 
 
-    static class DetectObstacle implements Behavior
+//    static class DetectObstacle implements Behavior
+//    {
+//        private boolean foundObstacle()
+//        {
+//            int dist = sensor.distance();
+//
+//            return (dist < 30);          // Returns true if the sensor detects an object nearer than 30 cm
+//        }
+//
+//        @Override
+//        public boolean takeControl() { log("DetectObstacle.takeControl()"); return foundObstacle(); }            // If an obstacle is found this Behaviour takes control.
+//
+//        @Override
+//        public void suppress() { log("DetectObstacle.suppress()"); }           // Since this is the highest priority behaviour suppress will never be called upon it
+//
+//        @Override
+//        public void action()        // Upon obstacle detection we simply stop the motor
+//        {
+//            log("DetectObstacle.action()");
+//
+//            BumperCar.stop();
+//            BumperCar.sensor.stop_sensor();
+//
+//            log("Program exited.");
+//
+//            System.exit(0);                 // Exit the program.
+//        }
+//    }
+
+
+//    static class DriverForward implements Behavior
+//    {
+//        private boolean _suppressed = false;
+//
+//        @Override
+//        public boolean takeControl()
+//        {
+//            log("DriveForward.takeControl()");
+//
+//            return true;            // This Behavior always wants control.
+//        }
+//
+//        @Override
+//        public void suppress()
+//        {
+//            log("DriveForward.suppress()");
+//
+//            _suppressed = true;          // Standard practice for suppressed method
+//        }
+//
+//
+//        @Override
+//        public void action()
+//        {
+//            log("DriveForward.action()");
+//
+//            _suppressed = false;            // The behavior's action was triggered so it is not suppressed any longer
+//
+//            forward();                      // Make the Car move forward
+//
+//            while (! _suppressed)           // Stay in the action() block until the Behavior is suppressed
+//            {
+//                Thread.yield();         // Don't exit till suppressed
+//            }
+//        }
+//    }
+
+    static class DetectObstacle implements Runnable
     {
-        private boolean foundObstacle()
-        {
-            int dist = sensor.distance();
+        private DriveForward mDriver;
 
-            return (dist < 30);          // Returns true if the sensor detects an object nearer than 30 cm
-        }
-
-        @Override
-        public boolean takeControl() { log("DetectObstacle.takeControl()"); return foundObstacle(); }            // If an obstacle is found this Behaviour takes control.
-
-        @Override
-        public void suppress() { log("DetectObstacle.suppress()"); }           // Since this is the highest priority behaviour suppress will never be called upon it
-
-        @Override
-        public void action()        // Upon obstacle detection we simply stop the motor
-        {
-            log("DetectObstacle.action()");
-
-            BumperCar.stop();
-            BumperCar.sensor.stop_sensor();
-
-            log("Program exited.");
-
-            System.exit(0);                 // Exit the program.
-        }
-    }
-
-
-    static class DriverForward implements Behavior
-    {
         private boolean _suppressed = false;
 
-        @Override
-        public boolean takeControl()
-        {
-            log("DriveForward.takeControl()");
+        public static final class Lock {}
+        public static final Lock lock = new Lock();
 
-            return true;            // This Behavior always wants control.
+        public DetectObstacle(DriveForward driver)
+        {
+            mDriver = driver;
         }
 
         @Override
-        public void suppress()
+        public void run()
         {
-            log("DriveForward.suppress()");
-
-            _suppressed = true;          // Standard practice for suppressed method
-        }
-
-
-        @Override
-        public void action()
-        {
-            log("DriveForward.action()");
-
-            _suppressed = false;            // The behavior's action was triggered so it is not suppressed any longer
-
-            forward();                      // Make the Car move forward
-
-            while (! _suppressed)           // Stay in the action() block until the Behavior is suppressed
+            while (! _suppressed)
             {
-                Thread.yield();         // Don't exit till suppressed
+                synchronized(lock)
+                {
+                    try { lock.wait(100); } catch (InterruptedException e) {}
+                }
+
+                if (sensor.distance() < 30)
+                {
+                    DriveForward.Lock dLock = mDriver.lock();
+                    mDriver.suppress();
+
+                    synchronized(dLock)
+                    {
+                        dLock.notify();
+                    }
+
+                    _suppressed = true;
+
+                    sensor.stop_sensor();
+                }
             }
         }
     }
@@ -218,8 +268,14 @@ public class BumperCar
     {
         private boolean _suppressed = false;
 
-        public static class Lock {}
-        public static final Lock lock = new Lock();
+        public static final class Lock {}
+        private static final Lock lock = new Lock();
+
+        public Lock lock() { return lock; }
+
+        public void suppress() { _suppressed = true; }
+
+
 
 
         @Override
@@ -231,7 +287,11 @@ public class BumperCar
             {
                 synchronized(lock)
                 {
-                    try {lock.wait(6000); _suppressed = true;} catch (InterruptedException e) {}
+                    try
+                    {
+                        lock.wait();
+                    }
+                    catch (InterruptedException e) {}
                 }
             }
 
