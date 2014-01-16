@@ -39,8 +39,11 @@ public class IRSensor extends Thread
     {
         stop = true;
 //        interrupt();                    // This call ensures that the thread exits any sleep() and wait() methods it might be stuck in
-        _lock.notify();
 
+        synchronized(_lock)         // We use the _lock object (in a synchronized block) to notify itself which causes all _lock.wait() calls to be interrupted, in particular the one inside the run() method
+        {
+            _lock.notify();
+        }
     }
 
 
