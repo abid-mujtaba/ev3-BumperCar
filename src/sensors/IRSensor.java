@@ -6,6 +6,8 @@ import lejos.hardware.sensor.EV3IRSensor;
 import lejos.hardware.sensor.SensorModes;
 import lejos.robotics.SampleProvider;
 
+import lock.Lock;
+
 /**
  * Implements a model used to access the IR (Infra-Red Sensor) on the EV3
  */
@@ -17,8 +19,7 @@ public class IRSensor extends Thread
 
     private int distance = 255;         // Initiated to infinity (of sorts)
 
-    private static class Lock {}
-    private final Lock _lock = new Lock();
+    private final Lock mLock = new Lock();          // Lock used to hold and resume execution.
 
 
     public IRSensor()          // Constructor initiates the IR Sensor and the sampler we will use to fetch sensor data
@@ -38,12 +39,8 @@ public class IRSensor extends Thread
     public void stop_sensor()          // Called to make the IRSensor Thread stop by making it exit the run() method
     {
         stop = true;
-//        interrupt();                    // This call ensures that the thread exits any sleep() and wait() methods it might be stuck in
 
-        synchronized(_lock)         // We use the _lock object (in a synchronized block) to notify itself which causes all _lock.wait() calls to be interrupted, in particular the one inside the run() method
-        {
-            _lock.notify();
-        }
+        mLock.resume();     // Force interruption of mLock.hold() calls
     }
 
 
@@ -57,14 +54,7 @@ public class IRSensor extends Thread
 
             distance = (int) sample[0];
 
-            synchronized (_lock)
-            {
-                try { _lock.wait(100); } catch (InterruptedException e) {}
-            }
-
-//                log("Distance: " + distance);
-
-//                Delay.msDelay(100);             // We delay for 100ms before getting data from the IR sensor.
+            mLock.hold(100);            // Use mLock to hold for 100ms yielding the Thread in the process. Allows more efficient use of resources.
         }
     }
 }

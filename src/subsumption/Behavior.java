@@ -1,16 +1,16 @@
 package subsumption;
 
-import lock.BaseLock;
+import lock.Lock;
 
 /**
  * Implements the abstract base class of the Behavior model used in subsumption.
  *
- * This class extends BaseLock and thereby inherits thread holding mechanisms such as wait, notify and best of all hold.
+ * This class extends Lock and thereby inherits thread holding mechanisms such as wait, notify and best of all hold.
  *
  * Actual behaviors should extend this class and implement the abstract methods.
  */
 
-public abstract class Behavior extends BaseLock implements Runnable
+public abstract class Behavior extends Lock implements Runnable
 {
     public abstract void run();         // Required to implement Runnable
 

@@ -1,15 +1,15 @@
 package lock;
 
 /**
- * Implements the base abstract class BaseLock which when extended imparts to its children the capacity to carry out "synchronized" operations including wait()
+ * Implements the base class Lock which when extended imparts to its children the capacity to carry out "synchronized" operations including wait()
  * and notify(). This allows a transparent mechanism for putting threads on hold and waking them up from said holds.
  */
 
-public abstract class BaseLock
+public class Lock
 {
-    public static final class Lock {}          // Inner empty class object that is used to anchor the locking mechanism
-    protected final Lock _lock = new Lock();
-    public Lock lock() { return _lock; }       // Accessor method for the inner Lock object _lock.
+    public static final class _Lock {}          // Inner empty class object that is used to anchor the locking mechanism
+    protected final _Lock _lock = new _Lock();
+    public _Lock lock() { return _lock; }       // Accessor method for the inner _Lock object _lock.
 
 
     public void resume()         // Method used to resume execution blocked by _lock object when it is stuck in the wait() call.
@@ -30,7 +30,7 @@ public abstract class BaseLock
                 _lock.wait();
             }
         }
-        catch (InterruptedException e) { _print("_lock.wait() interrupted in BaseLock.hold()"); }
+        catch (InterruptedException e) { _print("_lock.wait() interrupted in Lock.hold()"); }
     }
 
 
@@ -43,7 +43,7 @@ public abstract class BaseLock
                 _lock.wait(interval);
             }
         }
-        catch (InterruptedException e) { _print(String.format("_lock.wait(%d) interrupted in BaseLock.hold()", interval)); }
+        catch (InterruptedException e) { _print(String.format("_lock.wait(%d) interrupted in Lock.hold()", interval)); }
     }
 
 
