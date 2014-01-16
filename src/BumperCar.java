@@ -158,10 +158,7 @@ public class BumperCar
         {
             while (! _suppressed)
             {
-                synchronized(_lock)
-                {
-                    try { _lock.wait(100); } catch (InterruptedException e) {}
-                }
+                hold(100);
 
                 if (sensor.distance() < 30)
                 {
@@ -197,16 +194,7 @@ public class BumperCar
 
             while (! _suppressed)
             {
-//                hold();
-
-                synchronized(_lock)
-                {
-                    try
-                    {
-                        _lock.wait();
-                    }
-                    catch (InterruptedException e) {}
-                }
+                hold();
             }
 
             stop();
