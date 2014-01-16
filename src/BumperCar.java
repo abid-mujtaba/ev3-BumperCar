@@ -162,13 +162,8 @@ public class BumperCar
 
                 if (sensor.distance() < 30)
                 {
-                    DriveForward.Lock dLock = mDriver.lock();
                     mDriver.suppress();
-
-                    synchronized(dLock)
-                    {
-                        dLock.notify();
-                    }
+                    mDriver.resume();           // Used to snap the mDriver object out of hold()
 
                     _suppressed = true;
 
