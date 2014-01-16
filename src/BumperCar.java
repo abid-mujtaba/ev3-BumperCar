@@ -1,11 +1,7 @@
-import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.motor.Motor;
-import lejos.hardware.port.Port;
-import lejos.hardware.sensor.EV3IRSensor;
-import lejos.hardware.sensor.SensorModes;
 import lejos.robotics.RegulatedMotor;
-import lejos.robotics.SampleProvider;
-import lejos.utility.Delay;
+
+import sensors.IRSensor;
 import subsumption.Behavior;
 
 /**
@@ -44,7 +40,6 @@ public class BumperCar
         log("Initializing Sensor");
 
         sensor = new IRSensor();
-        sensor.setDaemon(true);
         sensor.start();
 
         Behavior driver = new DriveForward();
@@ -108,49 +103,7 @@ public class BumperCar
     }
 
 
-    static class IRSensor extends Thread
-    {
-        private SampleProvider sampler;
-        private boolean stop = false;
 
-        private int distance = 255;         // Initiated to infinity (of sorts)
-
-
-        IRSensor()          // Constructor initiates the IR Sensor and the sampler we will use to fetch sensor data
-        {
-            Port port = LocalEV3.get().getPort("S4");           // Define the port used by the Sensor
-            SensorModes sensor = new EV3IRSensor(port);         // Initiate the EV3 IR Sensor
-
-            sampler = sensor.getMode("Distance");               // Define the sampler to be the IRSensor in "Distance" measuring mode
-        }
-
-
-        public synchronized int distance() { return distance; }          // Method for accessing the value of the last distance measured by the sensor
-
-
-        public void stop_sensor()          // Called to make the IRSensor Thread stop by making it exit the run() method
-        {
-            stop = true;
-            interrupt();                    // This call ensures that the thread exits any sleep() and wait() methods it might be stuck in
-        }
-
-
-        public void run()
-        {
-            float[] sample = new float[sampler.sampleSize()];
-
-            while (! stop)          // This loops infinitely until the stop_sensor method is called which changes this boolean value
-            {
-                sampler.fetchSample(sample, 0);         // Get sample from sensor
-
-                distance = (int) sample[0];
-
-//                log("Distance: " + distance);
-
-                Delay.msDelay(100);             // We delay for 100ms before getting data from the IR sensor.
-            }
-        }
-    }
 
 
 //    static class DetectObstacle implements Behavior
@@ -183,14 +136,11 @@ public class BumperCar
 //    }
 
 
-    static class DetectObstacle implements Runnable
+    static class DetectObstacle extends Behavior
     {
         private Behavior mDriver;
 
         private boolean _suppressed = false;
-
-        public static final class Lock {}
-        public static final Lock lock = new Lock();
 
         public DetectObstacle(Behavior driver)
         {
@@ -198,13 +148,19 @@ public class BumperCar
         }
 
         @Override
+        public void suppress() {}       // This is the highest priority behavior so it is never suppressed so we leave this method empty
+
+        @Override
+        public boolean takeControl() { return sensor.distance() < 30; }     // This behavior takes control when the robot is very near an obstacle as detected by the sensor
+
+        @Override
         public void run()
         {
             while (! _suppressed)
             {
-                synchronized(lock)
+                synchronized(_lock)
                 {
-                    try { lock.wait(100); } catch (InterruptedException e) {}
+                    try { _lock.wait(100); } catch (InterruptedException e) {}
                 }
 
                 if (sensor.distance() < 30)
@@ -241,6 +197,8 @@ public class BumperCar
 
             while (! _suppressed)
             {
+//                hold();
+
                 synchronized(_lock)
                 {
                     try
