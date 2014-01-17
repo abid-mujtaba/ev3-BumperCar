@@ -2,6 +2,7 @@ import lejos.hardware.motor.Motor;
 import lejos.robotics.RegulatedMotor;
 
 import sensors.IRSensor;
+import subsumption.Arbitrator;
 import subsumption.Behavior;
 
 /**
@@ -43,34 +44,15 @@ public class BumperCar
         sensor.start();
 
         Behavior driver = new DriveForward();
-        DetectObstacle obstacle = new DetectObstacle(driver);
+        Behavior obstacle = new DetectObstacle();
 
-        Thread t_driver = new Thread(driver, "Thread - Driver");
-        Thread t_obstacle = new Thread(obstacle, "Thread - Obstacle");
+        Behavior[] behaviors = {driver, obstacle};
 
-        t_driver.start();
-        t_obstacle.start();
+        Arbitrator arbitrator = new Arbitrator(behaviors);
 
-        try
-        {
-            t_driver.join();
-            t_obstacle.join();
-        }
-        catch (InterruptedException e) {}
+        arbitrator.start();
 
-
-
-//        // Initialize Subsumption
-//        log("Initializing Subsumption");
-//
-//        Behavior b1 = new DriverForward();
-//        Behavior b2 = new DetectObstacle();
-//
-//        Behavior[] behaviors = {b1, b2};
-//
-//        Arbitrator arbitrator = new Arbitrator(behaviors);          // An Arbitrator initiated using the behaviors list
-//
-//        arbitrator.start();             // Begin arbitration.
+        try { arbitrator.join(); } catch (InterruptedException e) {}
 
         log("Initialization Complete");
     }
@@ -103,50 +85,8 @@ public class BumperCar
     }
 
 
-
-
-
-//    static class DetectObstacle implements Behavior
-//    {
-//        private boolean foundObstacle()
-//        {
-//            int dist = sensor.distance();
-//
-//            return (dist < 30);          // Returns true if the sensor detects an object nearer than 30 cm
-//        }
-//
-//        @Override
-//        public boolean takeControl() { log("DetectObstacle.takeControl()"); return foundObstacle(); }            // If an obstacle is found this Behaviour takes control.
-//
-//        @Override
-//        public void suppress() { log("DetectObstacle.suppress()"); }           // Since this is the highest priority behaviour suppress will never be called upon it
-//
-//        @Override
-//        public void action()        // Upon obstacle detection we simply stop the motor
-//        {
-//            log("DetectObstacle.action()");
-//
-//            BumperCar.stop();
-//            BumperCar.sensor.stop_sensor();
-//
-//            log("Program exited.");
-//
-//            System.exit(0);                 // Exit the program.
-//        }
-//    }
-
-
     static class DetectObstacle extends Behavior
     {
-        private Behavior mDriver;
-
-        private boolean _suppressed = false;
-
-        public DetectObstacle(Behavior driver)
-        {
-            mDriver = driver;
-        }
-
         @Override
         public void suppress() {}       // This is the highest priority behavior so it is never suppressed so we leave this method empty
 
@@ -156,20 +96,10 @@ public class BumperCar
         @Override
         public void run()
         {
-            while (! _suppressed)
-            {
-                hold(100);
+            sensor.stop_sensor();
 
-                if (sensor.distance() < 30)
-                {
-                    mDriver.suppress();
-                    mDriver.resume();           // Used to snap the mDriver object out of hold()
-
-                    _suppressed = true;
-
-                    sensor.stop_sensor();
-                }
-            }
+            hold(200);              // Wait 200 ms and then stop the program
+            System.exit(0);         // Stop the program entirely
         }
     }
 
@@ -178,7 +108,12 @@ public class BumperCar
     {
         private boolean _suppressed = false;
 
-        public void suppress() { _suppressed = true; }
+        public void suppress()
+        {
+            _suppressed = true;
+
+            resume();       // We break the hold() to stop the action.
+        }
 
         public boolean takeControl() { return true; }       // Returning true here means this Behavior ALWAYS wants control that is it is the default behavior
 
