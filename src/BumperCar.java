@@ -1,6 +1,7 @@
 import lejos.hardware.motor.Motor;
 import lejos.robotics.RegulatedMotor;
 
+import lock.Lock;
 import sensors.IRSensor;
 
 import subsumption.Module;
@@ -15,10 +16,12 @@ import subsumption.io.Output;
 
 public class BumperCar
 {
-    private static RegulatedMotor motorR = Motor.A;
-    private static RegulatedMotor motorL = Motor.D;
+    private static RegulatedMotor motorR = Motor.D;
+    private static RegulatedMotor motorL = Motor.A;
 
     private static IRSensor sensor;
+
+    private static Lock lock = new Lock();
 
 
     public static void main(String[] args)
@@ -91,6 +94,20 @@ public class BumperCar
     }
 
 
+    private static void turn_right()
+    {
+        log("RIGHT TURN");
+
+        motorR.stop();          // Configuration for making the robot turn right
+        motorL.forward();
+
+        // TODO: Replace time based turning with one that measures rotation of each wheel
+        lock.hold(1900);        // Empirical amount of time required to make the robot turn right
+
+        motorL.stop();
+    }
+
+
     /*
      * The DriveForward module is responsible for moving the robot forward in a straight line. It has no sensor inputs. As long as it is uninhibited it keeps
      * the robot moving.
@@ -159,6 +176,12 @@ public class BumperCar
             if (sensor.distance() < 30)         // If we are close to an obstacle inhibit DriveForward.output thereby stopping the robot
             {
                 mOutput.inhibit();
+
+                hold(100);          // We stop the forward motion, reverse a bit to create space and then turn right
+                reverse();
+                hold(1000);
+                stop();
+                turn_right();
 
                 hold(200);      // Wait for 200 ms and then shutdown the program
                 System.exit(0);
