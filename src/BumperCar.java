@@ -2,9 +2,9 @@ import lejos.hardware.motor.Motor;
 import lejos.robotics.RegulatedMotor;
 
 import sensors.IRSensor;
-import subsumption.Arbitrator;
-import subsumption.Behavior;
+
 import subsumption.Module;
+import subsumption.Supervisor;
 import subsumption.io.Output;
 
 /**
@@ -45,16 +45,20 @@ public class BumperCar
         sensor = new IRSensor();
         sensor.start();
 
-//        Behavior driver = new DriveForward();
-//        Behavior obstacle = new DetectObstacle();
-//
-//        Behavior[] behaviors = {driver, obstacle};
-//
-//        Arbitrator arbitrator = new Arbitrator(behaviors);
-//
-//        arbitrator.start();
-//
-//        try { arbitrator.join(); } catch (InterruptedException e) {}
+        // Initialize the Modules and the Supervisor
+
+        log("Initializing Modules and Supervisor");
+
+        DriveForward driver = new DriveForward();
+        DetectObstacle detector = new DetectObstacle(driver.output);
+
+        Module[] modules = new Module[] {driver, detector};
+
+        Supervisor supervisor = new Supervisor(modules);
+
+        supervisor.start();
+
+        try { supervisor.join(); } catch (InterruptedException e) {}
 
         log("Initialization Complete");
     }
@@ -87,52 +91,6 @@ public class BumperCar
     }
 
 
-//    static class DetectObstacle extends Behavior
-//    {
-//        @Override
-//        public void suppress() {}       // This is the highest priority behavior so it is never suppressed so we leave this method empty
-//
-//        @Override
-//        public boolean takeControl() { return sensor.distance() < 30; }     // This behavior takes control when the robot is very near an obstacle as detected by the sensor
-//
-//        @Override
-//        public void run()
-//        {
-//            sensor.stop_sensor();
-//
-//            hold(200);              // Wait 200 ms and then stop the program
-//            System.exit(0);         // Stop the program entirely
-//        }
-//    }
-//
-//
-//    static class DriveForward extends Behavior
-//    {
-//        private boolean _suppressed = false;
-//
-//        public void suppress()
-//        {
-//            _suppressed = true;
-//
-//            resume();       // We break the hold() to stop the action.
-//        }
-//
-//        public boolean takeControl() { return true; }       // Returning true here means this Behavior ALWAYS wants control that is it is the default behavior
-//
-//        @Override
-//        public void run()
-//        {
-//            forward();
-//
-//            while (! _suppressed)
-//            {
-//                hold();
-//            }
-//
-//            stop();
-//        }
-//    }
-
     /*
      * The DriveForward module is responsible for moving the robot forward in a straight line. It has no sensor inputs. As long as it is uninhibited it keeps
      * the robot moving.
@@ -141,7 +99,7 @@ public class BumperCar
     static class DriveForward extends Module
     {
         @Override
-        public void run()       // Extremely simply method. Basically it calls forward then holds. If we resume from the hold it will loop around and call forward again
+        public void run()
         {
             while (true)
             {
@@ -154,7 +112,7 @@ public class BumperCar
 
         public Output output = new Output()
         {
-            public void action()
+            public void action()        // When the output is asked to act it simply commands the robot to move forward
             {
                 forward();
             }
@@ -168,6 +126,44 @@ public class BumperCar
                 stop();     // We want the forward motion to stop when the output is inhibited. This is our personal preference.
             }
         };
+    }
+
+    /*
+     * The DetectObstacle module is responsible for detecting an obstacle in this case stopping the robot dead in its tracks
+     */
+
+    static class DetectObstacle extends Module
+    {
+        private Output mOutput;          // This is the output that will be inhibited by this module.
+
+
+        public DetectObstacle(Output output)         // We store a reference to the Output object we will want to inhibit
+        {
+            mOutput = output;
+        }
+
+
+        @Override
+        public void run()
+        {
+            while (true)
+            {
+                detect_obstacle();          // The module runs an obstacle detection routine every 100 ms
+
+                hold(100);
+            }
+        }
+
+        private void detect_obstacle()
+        {
+            if (sensor.distance() < 30)         // If we are close to an obstacle inhibit DriveForward.output thereby stopping the robot
+            {
+                mOutput.inhibit();
+
+                hold(200);      // Wait for 200 ms and then shutdown the program
+                System.exit(0);
+            }
+        }
     }
 
 

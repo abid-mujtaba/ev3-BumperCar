@@ -1,7 +1,6 @@
 package subsumption.io;
 
 import lock.Lock;
-import subsumption.Module;
 
 /**
  * This models the output portion of a module, in particular the ability to be inhibited by higher layers by sending an inhibition signal.
@@ -11,13 +10,6 @@ public abstract class Output extends Lock
 {
     private boolean _inhibited = false;         // Flag for determining whether the output is inhibited.
     private boolean _active = false;
-
-//    private Module mModule;
-
-//    public Output(Module module)
-//    {
-//        mModule = module;       // We store the parent module for later use
-//    }
 
 
     synchronized public void inhibit()
