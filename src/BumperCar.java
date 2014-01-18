@@ -152,6 +152,8 @@ public class BumperCar
     static class DetectObstacle extends Module
     {
         private Output mOutput;          // This is the output that will be inhibited by this module.
+        private int mCount = 0;
+        private final int MAXCOUNT = 3;     // Number of detected obstacles before the robot stops
 
 
         public DetectObstacle(Output output)         // We store a reference to the Output object we will want to inhibit
@@ -175,7 +177,19 @@ public class BumperCar
         {
             if (sensor.distance() < 30)         // If we are close to an obstacle inhibit DriveForward.output thereby stopping the robot
             {
+                log("Obstacle Detected");
+
                 mOutput.inhibit();
+
+                log("Inhibiting Output");
+
+                if (++mCount >= MAXCOUNT)       // If the number of obstacles detected to date exceeds MAXCOUNT we stop execution
+                {
+                    log(String.format("Obstacle # %d. Stopping robot.", mCount));
+
+                    hold(200);      // Wait for 200 ms and then shutdown the program
+                    System.exit(0);
+                }
 
                 hold(100);          // We stop the forward motion, reverse a bit to create space and then turn right
                 reverse();
@@ -183,8 +197,9 @@ public class BumperCar
                 stop();
                 turn_right();
 
-                hold(200);      // Wait for 200 ms and then shutdown the program
-                System.exit(0);
+                mOutput.allow();        // Removes inhibition on the Output allowing that module to access it
+
+                log("Removing inhibition on Output");
             }
         }
     }
