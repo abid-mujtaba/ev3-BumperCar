@@ -113,7 +113,7 @@ public class BumperCar
         log("SHORT REVERSE");
 
         motorR.rotate(-600, true);          // The boolean passed in means the method returns immediately allowing the motorL rotate to be called immediately so that the two motors are rotating backwards simultaneously
-        motorL.rotate(-600);
+        motorL.rotate(-600, false);
     }
 
 
