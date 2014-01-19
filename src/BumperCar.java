@@ -1,3 +1,4 @@
+import lejos.hardware.Sound;
 import lejos.hardware.motor.Motor;
 import lejos.robotics.RegulatedMotor;
 
@@ -113,15 +114,14 @@ public class BumperCar
     {
         log("RIGHT TURN");
 
-        motorR.stop();          // Configuration for making the robot turn right
-        motorL.forward();
+        log(String.format("Before turning - motorR: %d - motorL: %d", motorR.getTachoCount(), motorL.getTachoCount()));
 
-        // TODO: Replace time based turning with one that measures rotation of each wheel
-        lock.hold(1900);        // Empirical amount of time required to make the robot turn right
+        motorL.rotate(850);
 
-        motorL.stop();
+        log(String.format("After turning - motorR: %d - motorL: %d", motorR.getTachoCount(), motorL.getTachoCount()));
 
-        log(String.format("motorR: %d - motorL: %d", motorR.getTachoCount(), motorL.getTachoCount()));
+        motorL.resetTachoCount();
+        motorR.resetTachoCount();
     }
 
 
@@ -221,22 +221,26 @@ public class BumperCar
                 {
                     log(String.format("Obstacle # %d. Stopping robot.", mCount));
 
+                    Sound.twoBeeps();           // Beep twice to signal the end of the program
+
                     hold(200);      // Wait for 200 ms and then shutdown the program
                     BumperCar.exit();       // Initiate graceful exit strategy
-                    hold(200);
-
-                    return;
+                    hold(200);              // Wait for 200 ms to allow the exit to proceed
                 }
+                else                            // Carry out the behavior required by this module when an obstacle is detected
+                {
+                    // TODO: Perform the reverse using angles rather than a time by writing a reverse(angle) method as well as a forward(angle) method
 
-                hold(100);          // We stop the forward motion, reverse a bit to create space and then turn right
-                reverse();
-                hold(1000);
-                stop();
-                turn_right();
+                    hold(100);          // We stop the forward motion, reverse a bit to create space and then turn right
+                    reverse();
+                    hold(1000);
+                    stop();
+                    turn_right();
 
-                mOutput.allow();        // Removes inhibition on the Output allowing that module to access it
+                    mOutput.allow();        // Removes inhibition on the Output allowing that module to access it
 
-                log("Removing inhibition on Output");
+                    log("Removing inhibition on Output");
+                }
             }
         }
     }
