@@ -33,6 +33,10 @@ public class BumperCar
 
         initialize();
 
+        mSupervisor.start();
+
+        try { mSupervisor.join(); } catch (InterruptedException e) {}
+
         log("Program Ends");
     }
 
@@ -67,13 +71,7 @@ public class BumperCar
 
         mSupervisor = new Supervisor(modules);
 
-        mSupervisor.start();
-
         log("Initialization Complete");
-
-        try { mSupervisor.join(); } catch (InterruptedException e) {}
-
-        log("Exiting Program");
     }
 
 
