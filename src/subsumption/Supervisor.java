@@ -37,4 +37,13 @@ public class Supervisor extends Thread
         }
         catch (InterruptedException e) {}
     }
+
+
+    public void exit()          // Called to signal all modules (threads) to exit
+    {
+        for (Module module: mModules)       // Iterate over all modules and send a termination signal to each
+        {
+            module.exit();
+        }
+    }
 }

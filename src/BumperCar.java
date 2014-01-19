@@ -23,6 +23,8 @@ public class BumperCar
 
     private static Lock lock = new Lock();
 
+    private static Supervisor mSupervisor;
+
 
     public static void main(String[] args)
     {
@@ -42,6 +44,11 @@ public class BumperCar
         motorR.setSpeed(400);
         motorL.setSpeed(400);
 
+        motorR.resetTachoCount();
+        motorL.resetTachoCount();
+
+        log("motorR - TachoCount: " + motorR.getTachoCount());
+
         // Initialize IR sensor
         log("Initializing Sensor");
 
@@ -57,19 +64,27 @@ public class BumperCar
 
         Module[] modules = new Module[] {driver, detector};
 
-        Supervisor supervisor = new Supervisor(modules);
+        mSupervisor = new Supervisor(modules);
 
-        supervisor.start();
-
-        try { supervisor.join(); } catch (InterruptedException e) {}
+        mSupervisor.start();
 
         log("Initialization Complete");
+
+        try { mSupervisor.join(); } catch (InterruptedException e) {}
+
+        log("Exiting Program");
+    }
+
+
+    private static void exit()          // Method defined here so that the modules can access it and signal the Supervisor to exit all threads
+    {
+        mSupervisor.exit();
     }
 
 
     private static void stop()          // Stops both motors to stop the rover
     {
-        log("STOP");
+        log(String.format("STOP - motorR: %d - motorL: %d", motorR.getTachoCount(), motorL.getTachoCount()));
 
         motorR.stop();
         motorL.stop();
@@ -105,6 +120,8 @@ public class BumperCar
         lock.hold(1900);        // Empirical amount of time required to make the robot turn right
 
         motorL.stop();
+
+        log(String.format("motorR: %d - motorL: %d", motorR.getTachoCount(), motorL.getTachoCount()));
     }
 
 
@@ -115,16 +132,24 @@ public class BumperCar
 
     static class DriveForward extends Module
     {
+        private boolean _exit = false;
+
+
         @Override
         public void run()
         {
-            while (true)
+            while (! _exit)
             {
                 output.act();
 
                 hold(100);          // Every 100 ms the DriveForward module commands the output to act (which it does unless it is inhibited)
             }
+
+            log("Exiting DriveForward");
         }
+
+        @Override
+        public void exit() { _exit = true; }    // When called it sets the _exit flag to true which will cause the thread to eventually exit
 
 
         public Output output = new Output()
@@ -151,6 +176,8 @@ public class BumperCar
 
     static class DetectObstacle extends Module
     {
+        private boolean _exit = false;
+
         private Output mOutput;          // This is the output that will be inhibited by this module.
         private int mCount = 0;
         private final int MAXCOUNT = 3;     // Number of detected obstacles before the robot stops
@@ -165,13 +192,20 @@ public class BumperCar
         @Override
         public void run()
         {
-            while (true)
+            while (! _exit)
             {
                 detect_obstacle();          // The module runs an obstacle detection routine every 100 ms
 
                 hold(100);
             }
+
+            log("Exiting DetectObstacle");
         }
+
+
+        @Override
+        public void exit() { _exit = true; }
+
 
         private void detect_obstacle()
         {
@@ -188,7 +222,10 @@ public class BumperCar
                     log(String.format("Obstacle # %d. Stopping robot.", mCount));
 
                     hold(200);      // Wait for 200 ms and then shutdown the program
-                    System.exit(0);
+                    BumperCar.exit();       // Initiate graceful exit strategy
+                    hold(200);
+
+                    return;
                 }
 
                 hold(100);          // We stop the forward motion, reverse a bit to create space and then turn right
