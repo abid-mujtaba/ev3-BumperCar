@@ -20,8 +20,11 @@ public class BumperCar
     private static RegulatedMotor motorL = Motor.A;
 
     private static IRSensor sensor;
-
     private static Supervisor mSupervisor;
+
+    private static int SPEED = 300;
+
+    private static int RIGHT_ANGLE_ROTATION = 450;      // The rotation angle for an orthogonal (90 degrees) turn. This depends upon the construction of the robot.
 
 
     public static void main(String[] args)
@@ -39,8 +42,8 @@ public class BumperCar
         // Initialize motors
         log("Intializing Motors");
 
-        motorR.setSpeed(400);
-        motorL.setSpeed(400);
+        motorR.setSpeed(SPEED);
+        motorL.setSpeed(SPEED);
 
         motorR.resetTachoCount();
         motorL.resetTachoCount();
@@ -84,8 +87,8 @@ public class BumperCar
     {
         log(String.format("STOP - %s", tachoCount()));
 
-        motorR.stop();
-        motorL.stop();
+        motorR.stop(true);              // We pass true in so that the method returns immediately allowing the next line to execute almost simultaneously
+        motorL.stop(false);
     }
 
 
@@ -122,7 +125,7 @@ public class BumperCar
 
         log(String.format("Before turning - %s", tachoCount()));
 
-        motorL.rotate(850);
+        motorL.rotate(RIGHT_ANGLE_ROTATION);
 
         log(String.format("After turning - %s", tachoCount()));
 
@@ -136,7 +139,7 @@ public class BumperCar
 
         log(String.format("Before turning - %s", tachoCount()));
 
-        motorR.rotate(850);
+        motorR.rotate(RIGHT_ANGLE_ROTATION);
 
         log(String.format("After turning - %s", tachoCount()));
 
