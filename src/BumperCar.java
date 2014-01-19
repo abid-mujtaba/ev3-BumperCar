@@ -2,7 +2,6 @@ import lejos.hardware.Sound;
 import lejos.hardware.motor.Motor;
 import lejos.robotics.RegulatedMotor;
 
-import lock.Lock;
 import sensors.IRSensor;
 
 import subsumption.Module;
@@ -21,8 +20,6 @@ public class BumperCar
     private static RegulatedMotor motorL = Motor.A;
 
     private static IRSensor sensor;
-
-    private static Lock lock = new Lock();
 
     private static Supervisor mSupervisor;
 
@@ -85,7 +82,7 @@ public class BumperCar
 
     private static void stop()          // Stops both motors to stop the rover
     {
-        log(String.format("STOP - motorR: %d - motorL: %d", motorR.getTachoCount(), motorL.getTachoCount()));
+        log(String.format("STOP - %s", tachoCount()));
 
         motorR.stop();
         motorL.stop();
@@ -110,19 +107,55 @@ public class BumperCar
     }
 
 
+    private static void short_reverse()
+    {
+        log("SHORT REVERSE");
+
+        motorR.rotate(-600, true);          // The boolean passed in means the method returns immediately allowing the motorL rotate to be called immediately so that the two motors are rotating backwards simultaneously
+        motorL.rotate(-600);
+    }
+
+
     private static void turn_right()
     {
         log("RIGHT TURN");
 
-        log(String.format("Before turning - motorR: %d - motorL: %d", motorR.getTachoCount(), motorL.getTachoCount()));
+        log(String.format("Before turning - %s", tachoCount()));
 
         motorL.rotate(850);
 
-        log(String.format("After turning - motorR: %d - motorL: %d", motorR.getTachoCount(), motorL.getTachoCount()));
+        log(String.format("After turning - %s", tachoCount()));
 
-        motorL.resetTachoCount();
-        motorR.resetTachoCount();
+        resetTacho();
     }
+
+
+    private static void turn_left()
+    {
+        log("LEFT TURN");
+
+        log(String.format("Before turning - %s", tachoCount()));
+
+        motorR.rotate(850);
+
+        log(String.format("After turning - %s", tachoCount()));
+
+        resetTacho();
+    }
+
+
+    private static void resetTacho()
+    {
+        motorR.resetTachoCount();
+        motorL.resetTachoCount();
+    }
+
+
+    private static String tachoCount()
+    {
+        return String.format("motorR: %d - motorL: %d", motorR.getTachoCount(), motorL.getTachoCount());
+    }
+
 
 
     /*
@@ -229,13 +262,9 @@ public class BumperCar
                 }
                 else                            // Carry out the behavior required by this module when an obstacle is detected
                 {
-                    // TODO: Perform the reverse using angles rather than a time by writing a reverse(angle) method as well as a forward(angle) method
-
-                    hold(100);          // We stop the forward motion, reverse a bit to create space and then turn right
-                    reverse();
-                    hold(1000);
-                    stop();
-                    turn_right();
+                    hold(100);          // We stop the forward motion, reverse a bit to create space and then turn left
+                    short_reverse();
+                    turn_left();
 
                     mOutput.allow();        // Removes inhibition on the Output allowing that module to access it
 
